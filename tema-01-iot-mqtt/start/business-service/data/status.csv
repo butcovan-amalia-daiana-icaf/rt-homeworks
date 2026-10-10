@@ -1,0 +1,6 @@
+deviceId;timestamp;text
+device-1;1791550858775;OK STATUS period=2000 threshold=28.00
+device-1;1791550867768;OK SET_INTERVAL 1000
+device-1;1791550884424;OK SET_THRESHOLD 24
+device-1;1791550898368;ERROR comanda necunoscuta: RESETDEVICE-1
+device-1;1791550911464;ERROR comanda necunoscuta: FOO

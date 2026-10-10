@@ -1,0 +1,53 @@
+@startuml diagrama-de-componente
+title Diagrama de componente: sistemul IoT (device -> broker -> serviciu -> device)
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+top to bottom direction
+
+package "business-service (Java)" {
+  component "CommandConsole\n(consola operatorului)" as Console
+  component "MqttConnection" as SMqtt
+  component "MessageProcessor\n(3 thread-uri: telemetry, alarm, status)" as Processor
+  component "Dashboard\n(starea device-urilor)" as Dashboard
+  database "CsvStorage\ndata/*.csv" as Csv
+  queue "inbox\n(BlockingQueue)" as Inbox
+}
+
+node "Broker MQTT\ncontrol.aut.utcluj.ro:11188" as Broker
+
+package "device-simulator (Java), un proces per device" {
+  component "TemperatureSensor\n(senzor simulat)" as Sensor
+  component "PeriodicTelemetryTask\nT = periodMs" as Periodic
+  component "SporadicAlarmTask\ninterval minim 5 s" as Sporadic
+  component "AperiodicCommandTask" as Aperiodic
+  component "MqttConnection" as DMqtt
+  queue "alarmEvents\n(BlockingQueue)" as AlarmQ
+  queue "commands\n(BlockingQueue)" as CmdQ
+}
+
+' ---- device ----
+Periodic --> Sensor : read()
+Aperiodic --> Sensor : reset()
+Periodic --> AlarmQ : put(temperatura)
+AlarmQ --> Sporadic : take()
+Sporadic ..> Periodic : getThreshold()
+Aperiodic ..> Periodic : setPeriodMs()\nsetThreshold()
+DMqtt --> CmdQ : commands\n(callback Paho)
+CmdQ --> Aperiodic : take()
+Periodic --> DMqtt : publish telemetry
+Sporadic --> DMqtt : publish alarm
+Aperiodic --> DMqtt : publish status
+
+' ---- broker ----
+DMqtt <--> Broker : telemetry, alarm, status (publish)\ncommands (subscribe)
+SMqtt <--> Broker : telemetry, alarm, status (subscribe devices/+/...)\ncommands (publish)
+
+' ---- business service ----
+SMqtt --> Inbox : put(mesaj)
+Inbox --> Processor : take()
+Processor --> Csv : append()
+Processor --> Dashboard : update
+Console --> Dashboard : show
+Console --> SMqtt : publish command
+@enduml

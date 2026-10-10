@@ -1,0 +1,38 @@
+@startuml diagrama-de-secventa-alarma
+title Secvență: telemetrie peste prag -> alarmă
+autonumber
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam sequenceMessageAlign center
+
+participant "PeriodicTelemetryTask" as P
+participant "TemperatureSensor" as S
+queue "alarmEvents" as Q
+participant "SporadicAlarmTask" as A
+participant "Broker MQTT" as B
+participant "MessageProcessor\n(business-service)" as M
+database "CsvStorage" as C
+participant "Dashboard" as D
+
+note over P : eliberare pe grila r_k = r_0 + k·T
+P -> S : read()
+S --> P : temperatura (ex. 29.4)
+P ->> B : publish telemetry "device-1;ts;29.40"
+B ->> M : telemetry (prin inbox)
+M -> C : append("telemetry", mesaj)
+M -> D : onTelemetry(device-1, 29.4)
+
+note over P : 29.4 > prag (28.0)
+P -> Q : put(29.4)
+Q --> A : take()
+
+alt au trecut >= 5000 ms de la ultima alarmă
+  A ->> B : publish alarm "device-1;ts;29.40;28.00"
+  B ->> M : alarm (prin inbox)
+  M -> C : append("alarm", mesaj)
+  M -> D : onAlarm(device-1, 29.4)
+  note right of M : afișează imediat\n"ALARMĂ device-1 ..."
+else au trecut < 5000 ms
+  note over A : evenimentul este respins\n(mesaj în consolă)
+end
+@enduml

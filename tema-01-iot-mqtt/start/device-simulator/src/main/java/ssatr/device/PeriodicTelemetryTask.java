@@ -1,6 +1,7 @@
 package ssatr.device;
-
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * TASK PERIODIC, cu perioada T = periodMs: fiecare job citește senzorul și
@@ -31,22 +32,38 @@ public class PeriodicTelemetryTask implements Runnable {
 
     @Override
     public void run() {
-        // TODO 1: implementați bucla taskului periodic. Fiecare job:
-        //   - citiți temperatura: sensor.read()
-        //   - publicați pe Config.telemetryTopic(deviceId) mesajul "deviceId;timestamp;temperatura"
-        //     (timestamp = System.currentTimeMillis(); temperatura cu punct zecimal,
-        //      de ex. String.format(Locale.US, "%.2f", t), ca să poată fi citită
-        //      cu Double.parseDouble în business-service)
-        //   - dacă temperatura > threshold, puneți valoarea în coada alarmEvents
-        //
-        // Folosiți așteptare absolută, nu relativă: Thread.sleep(periodMs) după
-        // fiecare job duce la derivă (perioada reală devine T + C + întârzieri).
-        // Calculați eliberarea următorului job pe grilă (next = next + periodMs)
-        // și așteptați doar cât a mai rămas până la ea. Pentru grilă folosiți
-        // un timp monoton: System.nanoTime().
-        //
-        // periodMs se poate schimba în timpul rulării (comanda SET_INTERVAL),
-        // deci citiți-l la fiecare job.
+        // r_0: prima eliberare este chiar acum; grila este r_k = r_0 + k * T.
+        long nextRelease = System.nanoTime();
+
+        try {
+            while (!Thread.currentThread().isInterrupted()) {
+                // ---- jobul k ----
+                double temperature = sensor.read();
+                long timestamp = System.currentTimeMillis();
+                mqtt.publish(Config.telemetryTopic(deviceId),
+                        deviceId + ";" + timestamp + ";" + String.format(Locale.US, "%.2f", temperature));
+
+                // doar SEMNALEAZĂ depășirea pragului; alarma o publică taskul sporadic
+                if (temperature > threshold) {
+                    alarmEvents.put(temperature);
+                }
+
+                // ---- așteptare ABSOLUTĂ până la următoarea eliberare de pe grilă ----
+                long periodNs = periodMs * 1_000_000L;   // citit la fiecare job (SET_INTERVAL)
+                nextRelease += periodNs;
+
+                long remaining = nextRelease - System.nanoTime();
+                if (remaining > 0) {
+                    TimeUnit.NANOSECONDS.sleep(remaining);
+                } else if (remaining < -periodNs) {
+                    // depășit cu mai mult de o perioadă: reluăm grila de acum, fără rafală
+                    System.out.println("[periodic] grila depășită cu " + (-remaining / 1_000_000) + " ms, resincronizare");
+                    nextRelease = System.nanoTime();
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public void setPeriodMs(long periodMs) {

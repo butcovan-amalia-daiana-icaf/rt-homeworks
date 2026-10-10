@@ -1,0 +1,28 @@
+@startuml diagrama-de-secventa-comanda
+title Secvență: operatorul trimite SET_INTERVAL, device-ul confirmă
+autonumber
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam sequenceMessageAlign center
+
+actor "Operator" as O
+participant "CommandConsole" as K
+participant "Broker MQTT" as B
+queue "commands" as Q
+participant "AperiodicCommandTask" as A
+participant "PeriodicTelemetryTask" as P
+participant "MessageProcessor\n(business-service)" as M
+database "CsvStorage" as C
+
+O -> K : "device-1 SET_INTERVAL 1000"
+K -> K : separă deviceId de comandă
+K ->> B : publish commands "SET_INTERVAL 1000"
+B ->> Q : commands (callback Paho -> coadă)
+Q --> A : take()
+A -> P : setPeriodMs(1000)
+A ->> B : publish status "device-1;ts;OK SET_INTERVAL 1000"
+B ->> M : status (prin inbox)
+M -> C : append("status", mesaj)
+note right of M : afișează imediat\n">>> device-1 a răspuns: OK SET_INTERVAL 1000"
+note over P : următorul job folosește noul T
+@enduml

@@ -1,0 +1,58 @@
+@startuml diagrama-de-timp
+title Diagramă de timp: cele trei taskuri ale device-ului (T = 2000 ms, interval minim între alarme = 5000 ms)
+scale 100 as 12 pixels
+
+concise "τ1 periodic (telemetrie)" as P
+concise "τ2 sporadic (alarme)" as S
+concise "τ3 aperiodic (comenzi)" as A
+
+@0
+P is "J0"
+S is {-}
+A is {-}
+
+@150
+P is {-}
+
+@2000
+P is "J1"
+@2150
+P is {-}
+
+@4000
+P is "J2 (T > prag)"
+@4150
+P is {-}
+S is "alarmă publicată"
+@4270
+S is {-}
+
+@5000
+A is "comandă"
+@5120
+A is {-}
+
+@6000
+P is "J3 (T > prag)"
+@6150
+P is {-}
+
+@8000
+P is "J4"
+@8150
+P is {-}
+
+@10000
+P is "J5"
+@10150
+P is {-}
+
+highlight 4000 to 4150 #LightGreen : eveniment acceptat
+highlight 6150 to 6350 #Pink : respins\n6150 - 4150 = 2000 < 5000
+highlight 4150 to 9150 #LightGray : interval minim 5000 ms
+
+legend right
+  Valori în ms. Timpii de calcul C sunt ilustrativi.
+  Joburile periodice sunt eliberate exact pe grila r_k = k·T.
+endlegend
+@enduml
