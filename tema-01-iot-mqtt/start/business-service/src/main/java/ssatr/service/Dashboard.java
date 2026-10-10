@@ -7,7 +7,7 @@ public class Dashboard {
 
     private static class DeviceState {
         double lastTemperature = Double.NaN;
-        long lastSeenMs;          // momentul SOSIRII ultimului mesaj
+        long lastSeenMs;
         int alarmCount;
     }
 

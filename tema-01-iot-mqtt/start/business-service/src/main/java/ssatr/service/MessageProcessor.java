@@ -30,7 +30,7 @@ public class MessageProcessor implements Runnable {
         try {
             while (true) {
                 String message = inbox.take();
-                storage.append(kind, message);      // salvat exact cum a sosit
+                storage.append(kind, message);
                 try {
                     process(message);
                 } catch (RuntimeException e) {
@@ -46,11 +46,11 @@ public class MessageProcessor implements Runnable {
         String[] f = message.split(";");
 
         switch (kind) {
-            case "telemetry":                       // deviceId;timestamp;temperatura
+            case "telemetry":
                 requireFields(f, 3);
                 dashboard.onTelemetry(f[0], Double.parseDouble(f[2]));
                 break;
-            case "alarm": {                         // deviceId;timestamp;temperatura;prag
+            case "alarm": {
                 requireFields(f, 4);
                 double temperature = Double.parseDouble(f[2]);
                 double threshold = Double.parseDouble(f[3]);
@@ -59,7 +59,7 @@ public class MessageProcessor implements Runnable {
                         f[0], temperature, threshold);
                 break;
             }
-            case "status":                          // deviceId;timestamp;text
+            case "status":
                 requireFields(f, 3);
                 dashboard.onStatus(f[0]);
                 System.out.println(">>> " + f[0] + " a răspuns: " + f[2]);

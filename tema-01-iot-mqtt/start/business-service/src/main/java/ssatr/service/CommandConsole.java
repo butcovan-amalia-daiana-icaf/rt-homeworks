@@ -44,7 +44,7 @@ public class CommandConsole implements Runnable {
     }
 
     private void sendCommand(String line) {
-        // "device-1 SET_INTERVAL 1000" -> ["device-1", "SET_INTERVAL 1000"]
+
         String[] parts = line.split("\\s+", 2);
         if (parts.length < 2 || parts[1].isBlank()) {
             System.out.println("Format greșit. Folosiți: <deviceId> <COMANDA> [parametru], "

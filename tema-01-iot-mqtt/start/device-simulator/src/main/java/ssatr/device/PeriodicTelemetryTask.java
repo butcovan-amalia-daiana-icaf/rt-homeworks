@@ -32,31 +32,31 @@ public class PeriodicTelemetryTask implements Runnable {
 
     @Override
     public void run() {
-        // r_0: prima eliberare este chiar acum; grila este r_k = r_0 + k * T.
+
         long nextRelease = System.nanoTime();
 
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                // ---- jobul k ----
+
                 double temperature = sensor.read();
                 long timestamp = System.currentTimeMillis();
                 mqtt.publish(Config.telemetryTopic(deviceId),
                         deviceId + ";" + timestamp + ";" + String.format(Locale.US, "%.2f", temperature));
 
-                // doar SEMNALEAZĂ depășirea pragului; alarma o publică taskul sporadic
+
                 if (temperature > threshold) {
                     alarmEvents.put(temperature);
                 }
 
-                // ---- așteptare ABSOLUTĂ până la următoarea eliberare de pe grilă ----
-                long periodNs = periodMs * 1_000_000L;   // citit la fiecare job (SET_INTERVAL)
+
+                long periodNs = periodMs * 1_000_000L;
                 nextRelease += periodNs;
 
                 long remaining = nextRelease - System.nanoTime();
                 if (remaining > 0) {
                     TimeUnit.NANOSECONDS.sleep(remaining);
                 } else if (remaining < -periodNs) {
-                    // depășit cu mai mult de o perioadă: reluăm grila de acum, fără rafală
+
                     System.out.println("[periodic] grila depășită cu " + (-remaining / 1_000_000) + " ms, resincronizare");
                     nextRelease = System.nanoTime();
                 }

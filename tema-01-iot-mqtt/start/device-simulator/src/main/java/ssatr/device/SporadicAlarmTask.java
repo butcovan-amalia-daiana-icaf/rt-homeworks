@@ -18,7 +18,7 @@ public class SporadicAlarmTask implements Runnable {
     private final String deviceId;
     private final MqttConnection mqtt;
     private final BlockingQueue<Double> alarmEvents;
-    private final PeriodicTelemetryTask periodic;   // de aici se citește pragul curent
+    private final PeriodicTelemetryTask periodic;
 
     public SporadicAlarmTask(String deviceId, MqttConnection mqtt, BlockingQueue<Double> alarmEvents,
                              PeriodicTelemetryTask periodic) {
@@ -30,11 +30,11 @@ public class SporadicAlarmTask implements Runnable {
 
     @Override
     public void run() {
-        Long lastRelease = null;   // momentul ultimei alarme publicate (timp monoton)
+        Long lastRelease = null;
 
         try {
             while (true) {
-                double temperature = alarmEvents.take();       // blocat până sosește un eveniment
+                double temperature = alarmEvents.take();
                 long arrival = System.nanoTime();
 
                 if (lastRelease != null) {

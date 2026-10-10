@@ -44,7 +44,7 @@ public class AperiodicCommandTask implements Runnable {
                 try {
                     reply = execute(command.trim());
                 } catch (RuntimeException e) {
-                    reply = "ERROR " + e.getMessage();   // nu oprește taskul
+                    reply = "ERROR " + e.getMessage();
                 }
                 publishStatus(reply);
             }
@@ -103,7 +103,7 @@ public class AperiodicCommandTask implements Runnable {
     }
 
     private void publishStatus(String text) {
-        String safe = text.replace(';', ',');   // ';' este separatorul CSV
+        String safe = text.replace(';', ',');
         String message = deviceId + ";" + System.currentTimeMillis() + ";" + safe;
         mqtt.publish(Config.statusTopic(deviceId), message);
         System.out.println("[aperiodic] " + message);
