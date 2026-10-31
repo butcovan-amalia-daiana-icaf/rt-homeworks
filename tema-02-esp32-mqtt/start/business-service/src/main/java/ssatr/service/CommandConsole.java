@@ -44,11 +44,13 @@ public class CommandConsole implements Runnable {
     }
 
     private void sendCommand(String line) {
-        // TODO 6: separați deviceId de restul liniei
-        //   ("device-1 SET_INTERVAL 1000" -> "device-1" și "SET_INTERVAL 1000")
-        //   și publicați comanda pe Config.commandTopic(deviceId).
-        //   Afișați un mesaj de eroare dacă linia nu are formatul corect.
-        System.out.println("(trimiterea comenzilor neimplementată): " + line);
+        String[] parts = line.split("\\s+", 2);
+        if (parts.length < 2 || parts[1].isBlank()) {
+            System.out.println("Format greșit. Exemplu: esp32-a1b2c3 SET_INTERVAL 1000");
+            return;
+        }
+        mqtt.publish(Config.commandTopic(parts[0]), parts[1]);
+        System.out.println("Trimis către " + parts[0] + ": " + parts[1]);
     }
 
     private void printHelp() {
